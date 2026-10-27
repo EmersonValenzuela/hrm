@@ -1,6 +1,6 @@
 # Prueba de concepto HRM — Fase 0
 
-**Resultado:** GO para continuar usando Vue Vben Admin 5.x como base visual y técnica. Esta decisión no inicia la Fase 1; la implementación queda limitada a la PoC solicitada.
+**Resultado original:** GO para continuar usando Vue Vben Admin 5.x como base visual y técnica. Este documento conserva la evidencia del cierre de Fase 0; el estado vigente de las fases posteriores se resume al final.
 
 ## Alcance ejecutado
 
@@ -14,7 +14,7 @@
 ## Criterios go/no-go
 
 | Criterio de la sección 12 | Evidencia | Resultado |
-|---|---|---|
+| --- | --- | --- |
 | Identidad propia, sin marca ni contenido de Buk, Horilla o la plantilla | La marca, los textos, los colores y las pantallas son de Ayni. El esqueleto de navegación Vben se conserva de forma intencional, según lo solicitado. | GO con esta decisión explícita |
 | Esqueleto Vben reutilizado sin modificar `packages/` | `BasicLayout` y sus elementos de navegación se consumen desde `@vben/layouts`; `git status --short -- packages` no reportó cambios. | GO |
 | Selector de roles integrado con permisos | Se probaron Colaborador, Jefe y RR. HH.; cambian las opciones del menú. El directorio, búsqueda y ficha se probaron con RR. HH. | GO |
@@ -24,7 +24,7 @@
 ## Validación realizada
 
 | Comprobación | Resultado |
-|---|---|
+| --- | --- |
 | Arranque de `apps/web-ele` y `apps/web-hrm` | Ambos servidores respondieron. `web-hrm` se abrió en el navegador con el layout Vben integrado. |
 | `pnpm -F @hrm/web-hrm typecheck` | Correcto después de integrar `@vben/layouts`. |
 | `pnpm -F @hrm/web-hrm build` | Correcto; la advertencia anterior de importación dinámica del layout fue resuelta. |
@@ -33,10 +33,10 @@
 | Shell | Se verificó en el navegador la barra lateral, cabecera, migas de pan, pestañas, selector de rol y menú de cuenta dentro del `BasicLayout` original. |
 | Consola | No se observaron errores de ejecución ni mensajes de localización faltante en el recorrido. Permanece el aviso de compatibilidad `[Vben Form]` de la dependencia compartida; no se modificó `packages/`. |
 
-## Observaciones y límites
+## Observaciones y límites al cierre de Fase 0
 
 - Es una demostración exclusivamente frontend: no hay backend, autenticación real ni datos personales reales.
-- Los módulos implementados son Mi día y el directorio de Empleados; no se avanzó a la Fase 1 ni a los demás módulos.
+- En ese hito, los módulos implementados eran Mi día y el directorio de Empleados.
 - El layout estándar de Vben conserva el aspecto estructural propio de la plantilla; la marca, el idioma, los colores y las pantallas de la demo son propios.
 - El estado de demo se guarda localmente. Para volver a los datos iniciales, usar “Restablecer demo”.
 
@@ -51,4 +51,22 @@ pnpm -F @hrm/web-hrm typecheck
 pnpm -F @hrm/web-hrm build
 ```
 
-La PoC no autoriza comenzar la Fase 1; se espera una solicitud explícita para avanzar.
+## Estado posterior de implementación
+
+La implementación avanzó a las fases 1, 2 y 3 por solicitud posterior. Este resumen distingue el trabajo disponible de las comprobaciones que aún no se han completado:
+
+| Fase | Estado | Evidencia |
+| --- | --- | --- |
+| 1 — Fundaciones | Implementada | Tokens propios, componentes compartidos de datos/vistas, servicios mock, persistencia local y `resetDemo()`. |
+| 2 — Módulos | Implementada en el frontend | Mi día, Empleados, solicitudes y aprobaciones, vacaciones y permisos, asistencia, onboarding y offboarding; las rutas respetan los roles de demostración. |
+| 3 — Pulido y grabación | En verificación | Se añadieron estados y textos en español, tokens para modo oscuro y ajustes de tablas. Falta ensayar de punta a punta el flujo completo de grabación y cerrar una revisión de accesibilidad/contraste. |
+
+### Verificaciones posteriores
+
+- `pnpm -F @hrm/web-hrm typecheck` y `pnpm -F @hrm/web-hrm build`: correctos.
+- `oxfmt --check` y `oxlint` pasan en los archivos funcionales modificados; el lint de toda la app conserva errores en mocks y rutas preexistentes no tocados.
+- En navegador se verificaron el directorio con 30 personas, el alta en tres pasos, el inicio de onboarding, el restablecimiento de la demo y la pantalla de RR. HH. al cambiar el rol.
+- A 1920 × 1080 no se detectó desbordamiento horizontal en la pantalla verificada. El mapeo de tokens oscuros responde a la clase `dark` de Vben.
+- En desarrollo permanece el aviso de migración de Vben Form emitido por el plugin de advertencia del repositorio. No requiere cambios en `packages/` y no se silenció.
+
+La demo sigue siendo solo frontend y utiliza datos ficticios. El flujo completo de vacaciones, aprobación, validación de asistencia y cierre de offboarding aún requiere ensayo integrado antes de grabar.

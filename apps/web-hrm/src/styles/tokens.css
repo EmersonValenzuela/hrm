@@ -1,20 +1,20 @@
 :root {
-  color-scheme: light;
   --color-primary: #0f766e;
   --color-primary-soft: #ccfbf1;
   --color-accent: #f59e0b;
+  --color-accent-soft: #fef3c7;
   --color-ink: #0f172a;
   --color-ink-muted: #334155;
   --color-surface: #fafaf7;
-  --color-card: #ffffff;
+  --color-card: #fff;
   --color-line: #e7e5e4;
   --color-success: #16a34a;
   --color-warning: #d97706;
   --color-error: #dc2626;
   --color-info: #0284c7;
-  --color-surface-glass: rgb(250 250 247 / 0.94);
+  --color-surface-glass: rgb(250 250 247 / 94%);
   --font-display: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
-  --font-body: Inter, 'Segoe UI', sans-serif;
+  --font-body: inter, 'Segoe UI', sans-serif;
   --font-size-12: 0.75rem;
   --font-size-14: 0.875rem;
   --font-size-16: 1rem;
@@ -33,7 +33,7 @@
   --radius-card: 0.875rem;
   --radius-pill: 999px;
   --border-width: 1px;
-  --shadow-float: 0 0.75rem 2rem rgb(15 23 42 / 0.08);
+  --shadow-float: 0 0.75rem 2rem rgb(15 23 42 / 8%);
   --rail-width: 15rem;
   --topbar-height: 5rem;
   --content-width: 90rem;
@@ -64,6 +64,47 @@
   --el-border-radius-base: var(--radius-control);
   --el-font-size-base: var(--font-size-14);
   --el-box-shadow-light: var(--shadow-float);
+
+  color-scheme: light;
+}
+
+:root.dark {
+  --color-primary: #2dd4bf;
+  --color-primary-soft: #134e4a;
+  --color-accent: #fbbf24;
+  --color-accent-soft: #78350f;
+  --color-ink: #f1f5f9;
+  --color-ink-muted: #cbd5e1;
+  --color-surface: #0f172a;
+  --color-card: #1e293b;
+  --color-line: #334155;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #38bdf8;
+  --color-surface-glass: rgb(15 23 42 / 94%);
+  --shadow-float: 0 0.75rem 2rem rgb(0 0 0 / 24%);
+  --el-color-primary: var(--color-primary);
+  --el-color-primary-light-3: #5eead4;
+  --el-color-primary-light-5: #99f6e4;
+  --el-color-primary-light-7: #115e59;
+  --el-color-primary-light-8: #134e4a;
+  --el-color-primary-light-9: #042f2e;
+  --el-color-primary-dark-2: #14b8a6;
+  --el-bg-color: var(--color-card);
+  --el-bg-color-page: var(--color-surface);
+  --el-bg-color-overlay: var(--color-card);
+  --el-text-color-primary: var(--color-ink);
+  --el-text-color-regular: var(--color-ink-muted);
+  --el-text-color-secondary: #94a3b8;
+  --el-border-color: var(--color-line);
+  --el-border-color-light: var(--color-line);
+  --el-border-color-lighter: var(--color-line);
+  --el-fill-color-light: #334155;
+  --el-fill-color-lighter: #273449;
+  --el-box-shadow-light: var(--shadow-float);
+
+  color-scheme: dark;
 }
 
 * {
@@ -79,10 +120,10 @@ body,
 }
 
 body {
-  background: var(--color-surface);
-  color: var(--color-ink);
   font-family: var(--font-body);
   font-size: var(--font-size-14);
+  color: var(--color-ink);
+  background: var(--color-surface);
 }
 
 button,
@@ -98,8 +139,8 @@ textarea {
 }
 
 ::selection {
-  background: var(--color-primary-soft);
   color: var(--color-ink);
+  background: var(--color-primary-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -107,8 +148,8 @@ textarea {
   *::before,
   *::after {
     scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }

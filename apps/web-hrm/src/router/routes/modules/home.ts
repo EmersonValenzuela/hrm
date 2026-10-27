@@ -25,6 +25,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    name: 'PeopleHome',
+    path: '/inicio-rrhh',
+    component: () => import('#/views/day/index.vue'),
+    meta: {
+      authority: ['rrhh'],
+      icon: 'lucide:layout-dashboard',
+      keepAlive: true,
+      title: 'Personas',
+    },
+  },
+  {
     name: 'Employees',
     path: '/empleados',
     component: () => import('#/views/employees/index.vue'),

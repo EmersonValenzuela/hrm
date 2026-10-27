@@ -1,73 +1,77 @@
 <script lang="ts" setup>
+import type { VxeTableGridColumns } from '#/adapter/vxe-table';
+import type { Employee } from '#/services/employees.service';
+
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { Page } from '@vben/common-ui';
 
 import { Search, UsersRound } from '@lucide/vue';
 import {
   ElButton,
+  ElDatePicker,
   ElDrawer,
   ElForm,
   ElFormItem,
   ElInput,
   ElOption,
-  ElPagination,
   ElSelect,
-  ElTable,
-  ElTableColumn,
-  ElDatePicker,
 } from 'element-plus';
 
-import PageHeading from '#/components/shared/PageHeading.vue';
-import FilterBar from '#/components/shared/FilterBar.vue';
-import StatePanel from '#/components/shared/StatePanel.vue';
+import DataTable from '#/components/data/DataTable.vue';
 import StatusPill from '#/components/data/StatusPill.vue';
-
-import type { Employee } from '#/services/employees.service';
-
+import FilterBar from '#/components/shared/FilterBar.vue';
+import PageHeading from '#/components/shared/PageHeading.vue';
+import StatePanel from '#/components/shared/StatePanel.vue';
 import { employeesService } from '#/services/employees.service';
 
 const employees = ref<Employee[]>([]);
+const router = useRouter();
 const employeeGroups = ref<string[]>([]);
 const loading = ref(true);
 const errorMessage = ref('');
 const query = ref('');
 const selectedGroup = ref('');
-const startDateAfter = ref<string | null>(null);
+const startDateAfter = ref<null | string>(null);
 const selectedEmployee = ref<Employee | null>(null);
 const drawerOpen = ref(false);
 const requestVersion = ref(0);
-const currentPage = ref(1);
-const pageSize = ref(10);
-const sortField = ref<SortableField | null>(null);
-const sortOrder = ref<'ascending' | 'descending' | null>(null);
-
-const sortableFields = [
-  'name',
-  'group',
-  'email',
-  'modality',
-  'status',
-] as const;
-type SortableField = (typeof sortableFields)[number];
 
 const resultLabel = computed(() =>
   employees.value.length === 1
     ? '1 persona en el directorio'
     : `${employees.value.length} personas en el directorio`,
 );
-const visibleEmployees = computed(() => {
-  const rows = [...employees.value];
-  if (sortField.value && sortOrder.value) {
-    const field = sortField.value;
-    const direction = sortOrder.value === 'ascending' ? 1 : -1;
-    rows.sort((left, right) => {
-      const leftValue = String(left[field]).toLocaleLowerCase('es-PE');
-      const rightValue = String(right[field]).toLocaleLowerCase('es-PE');
-      return leftValue.localeCompare(rightValue, 'es-PE') * direction;
-    });
-  }
-  const start = (currentPage.value - 1) * pageSize.value;
-  return rows.slice(start, start + pageSize.value);
-});
+const gridRows = computed(() =>
+  employees.value.map((employee) => ({
+    id: employee.id,
+    code: employee.code,
+    name: employee.name,
+    initials: employee.initials,
+    title: employee.title,
+    group: employee.group,
+    email: employee.email,
+    modality: employee.modality,
+    status: employee.status,
+  })),
+);
+const gridColumns: VxeTableGridColumns = [
+  { field: 'code', title: 'Código', width: 120, sortable: true },
+  { field: 'name', title: 'Persona', minWidth: 180, sortable: true },
+  { field: 'title', title: 'Cargo', minWidth: 180, sortable: true },
+  { field: 'group', title: 'Equipo', minWidth: 160, sortable: true },
+  { field: 'email', title: 'Correo', minWidth: 220, sortable: true },
+  { field: 'modality', title: 'Modalidad', width: 120, sortable: true },
+  { field: 'status', title: 'Estado', width: 140, sortable: true },
+  {
+    field: 'operation',
+    fixed: 'right',
+    slots: { default: 'action' },
+    title: 'Acciones',
+    width: 110,
+  },
+];
 
 async function loadEmployees() {
   const version = ++requestVersion.value;
@@ -110,36 +114,14 @@ function openEmployee(employeeId: string) {
   drawerOpen.value = true;
 }
 
-function onSortChange({
-  prop,
-  order,
-}: {
-  prop: string | null;
-  order: 'ascending' | 'descending' | null;
-}) {
-  if (!prop || !isSortableField(prop)) {
-    sortField.value = null;
-    sortOrder.value = null;
-    return;
-  }
-  sortField.value = prop;
-  sortOrder.value = order;
-  currentPage.value = 1;
-}
-
-function isSortableField(value: string): value is SortableField {
-  return sortableFields.some((field) => field === value);
-}
-
 watch([query, selectedGroup, startDateAfter], () => {
-  currentPage.value = 1;
   void loadEmployees();
 });
 onMounted(() => void loadEmployees());
 </script>
 
 <template>
-  <section class="employees-page" aria-label="Empleados">
+  <Page auto-content-height class="employees-page" aria-label="Empleados">
     <PageHeading
       eyebrow="Personas en Ayni"
       title="Empleados"
@@ -149,6 +131,9 @@ onMounted(() => void loadEmployees());
         <div class="employees-heading__symbol" aria-hidden="true">
           <UsersRound :size="22" />
         </div>
+        <ElButton type="primary" @click="router.push('/empleados/nuevo')">
+          Agregar persona
+        </ElButton>
       </template>
     </PageHeading>
 
@@ -203,97 +188,18 @@ onMounted(() => void loadEmployees());
         v-else-if="employees.length === 0"
         description="No encontramos personas con esos filtros."
       />
-      <ElTable
-        v-else
-        :data="visibleEmployees"
-        row-key="id"
-        class="employee-table"
-        aria-label="Lista de empleados"
-        @sort-change="onSortChange"
-      >
-        <ElTableColumn type="selection" width="48" reserve-selection />
-        <ElTableColumn type="index" label="#" width="64" />
-        <ElTableColumn
-          label="Persona"
-          prop="name"
-          min-width="220"
-          sortable="custom"
-        >
-          <template #default="{ row }">
-            <button
-              class="person-cell"
-              type="button"
-              @click="openEmployee(row.id)"
-            >
-              <span class="person-avatar" aria-hidden="true">{{
-                row.initials
-              }}</span>
-              <span class="person-cell__copy">
-                <strong>{{ row.name }}</strong>
-                <small>{{ row.code }} · {{ row.title }}</small>
-              </span>
-            </button>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn
-          prop="group"
-          label="Equipo"
-          min-width="150"
-          sortable="custom"
-        />
-        <ElTableColumn
-          prop="email"
-          label="Correo"
-          min-width="190"
-          sortable="custom"
-        />
-        <ElTableColumn
-          label="Modalidad"
-          prop="modality"
-          min-width="110"
-          sortable="custom"
-        >
-          <template #default="{ row }">
-            <span>{{ row.modality }}</span>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn
-          label="Estado"
-          prop="status"
-          min-width="110"
-          sortable="custom"
-        >
-          <template #default="{ row }">
-            <StatusPill
-              :label="row.status"
-              :tone="
-                row.status === 'Activo'
-                  ? 'success'
-                  : row.status === 'En onboarding'
-                    ? 'warning'
-                    : 'info'
-              "
-            />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="" width="90" align="right">
-          <template #default="{ row }">
-            <ElButton text type="primary" @click="openEmployee(row.id)">
-              Ver ficha
-            </ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-      <ElPagination
+      <DataTable
         v-if="!loading && !errorMessage && employees.length"
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        class="directory-pagination"
-        :page-sizes="[10, 20, 30]"
-        :total="employees.length"
-        layout="total, sizes, prev, pager, next"
-        aria-label="Paginación del directorio"
-      />
+        :rows="gridRows"
+        :columns="gridColumns"
+        title="Personas en el directorio"
+      >
+        <template #action="{ row }">
+          <ElButton text type="primary" @click="openEmployee(String(row.id))">
+            Ver ficha
+          </ElButton>
+        </template>
+      </DataTable>
     </section>
 
     <ElDrawer
@@ -347,39 +253,41 @@ onMounted(() => void loadEmployees());
         </dl>
       </div>
     </ElDrawer>
-  </section>
+  </Page>
 </template>
 
 <style scoped>
 .employees-page {
   display: grid;
   gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-4);
 }
 
 .employees-heading__symbol {
   display: grid;
+  place-items: center;
   width: var(--space-8);
   height: var(--space-8);
-  place-items: center;
-  border-radius: var(--radius-card);
-  background: var(--color-primary-soft);
   color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-card);
 }
 
 .directory-card {
   min-width: 0;
   overflow: hidden;
+  background: var(--color-card);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-card);
-  background: var(--color-card);
 }
 
 .directory-toolbar {
   display: flex;
-  align-items: center;
   gap: var(--space-3);
-  border-bottom: var(--border-width) solid var(--color-line);
+  align-items: center;
   padding: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-line);
 }
 
 .directory-toolbar :deep(.el-form-item) {
@@ -387,8 +295,8 @@ onMounted(() => void loadEmployees());
 }
 
 .search-field {
-  min-width: min(20rem, 100%);
   flex: 1;
+  min-width: min(20rem, 100%);
 }
 
 .group-filter {
@@ -404,64 +312,28 @@ onMounted(() => void loadEmployees());
 }
 
 .result-count {
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
-  white-space: nowrap;
-}
-
-.employee-table {
-  width: 100%;
-}
-
-.person-cell {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: var(--space-3);
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-align: left;
-}
-
-.person-cell__copy {
-  display: grid;
-  min-width: 0;
-  gap: var(--space-1);
-}
-
-.person-cell__copy strong {
-  font-size: var(--font-size-14);
-  font-weight: 650;
-}
-
-.person-cell__copy small {
-  overflow: hidden;
   color: var(--color-ink-muted);
-  font-size: var(--font-size-12);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .person-avatar,
 .profile-avatar {
   display: grid;
-  width: var(--space-7);
-  height: var(--space-7);
   flex: 0 0 auto;
   place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  width: var(--space-7);
+  height: var(--space-7);
   font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-pill);
 }
 
 .employee-profile {
   display: grid;
-  justify-items: start;
   gap: var(--space-3);
+  justify-items: start;
 }
 
 .profile-avatar {
@@ -486,25 +358,25 @@ onMounted(() => void loadEmployees());
 
 .employee-profile dl {
   display: grid;
-  width: 100%;
   gap: var(--space-3);
+  width: 100%;
   margin: var(--space-2) 0 0;
 }
 
 .employee-profile dl div {
-  border-top: var(--border-width) solid var(--color-line);
   padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--color-line);
 }
 
 .employee-profile dt {
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
 }
 
 .employee-profile dd {
   margin: var(--space-1) 0 0;
-  overflow-wrap: anywhere;
   font-weight: 550;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 56rem) {

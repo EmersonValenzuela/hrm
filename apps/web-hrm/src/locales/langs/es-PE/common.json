@@ -1,9 +1,27 @@
 {
+  "back": "Volver",
+  "backToHome": "Volver al inicio",
   "cancel": "Cancelar",
   "confirm": "Confirmar",
+  "create": "Crear",
   "delete": "Eliminar",
+  "detail": "Detalle",
+  "disabled": "Deshabilitado",
+  "edit": "Editar",
+  "enabled": "Habilitado",
+  "hideSearchPanel": "Ocultar filtros",
+  "loadingMenu": "Cargando el menú",
+  "login": "Iniciar sesión",
   "logout": "Cerrar sesión",
+  "more": "Más",
   "noData": "Sin datos",
   "prompt": "Confirmación",
-  "refresh": "Actualizar"
+  "query": "Buscar",
+  "refresh": "Actualizar",
+  "reset": "Restablecer",
+  "search": "Buscar",
+  "showSearchPanel": "Mostrar filtros",
+  "notShow": "No mostrar",
+  "yes": "Sí",
+  "no": "No"
 }

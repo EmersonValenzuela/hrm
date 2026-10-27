@@ -1,24 +1,24 @@
 export type DemoRole = 'colaborador' | 'jefe' | 'rrhh';
 
 export type RequestType =
-  | 'Vacaciones'
-  | 'Permiso'
-  | 'Documento'
+  | 'Cambio de turno'
   | 'Corrección de asistencia'
-  | 'Cambio de turno';
+  | 'Documento'
+  | 'Permiso'
+  | 'Vacaciones';
 
 export type RequestStatus =
-  | 'Solicitado'
   | 'Aprobado'
+  | 'Cancelado'
   | 'Rechazado'
-  | 'Cancelado';
+  | 'Solicitado';
 
-export type AttendanceStatus = 'Por validar' | 'Validada' | 'Observada';
+export type AttendanceStatus = 'Observada' | 'Por validar' | 'Validada';
 
 export type ProcessTaskStatus =
-  | 'Pendiente'
-  | 'En curso'
   | 'Completada'
+  | 'En curso'
+  | 'Pendiente'
   | 'Vencida';
 
 export interface Employee {
@@ -37,7 +37,7 @@ export interface Employee {
   modality: string;
   startDate: string;
   birthday: string;
-  status: 'En onboarding' | 'Activo' | 'Inactivo';
+  status: 'Activo' | 'En onboarding' | 'Inactivo';
   initials: string;
   district: string;
   bankAccount: string;
@@ -47,11 +47,11 @@ export interface AttendanceRecord {
   id: string;
   employeeId: string;
   date: string;
-  checkIn: string | null;
-  checkOut: string | null;
+  checkIn: null | string;
+  checkOut: null | string;
   status: AttendanceStatus;
   extraMinutes: number;
-  source: 'Registro de demo' | 'Marcación personal';
+  source: 'Marcación personal' | 'Registro de demo';
 }
 
 export interface DemoRequest {
@@ -61,8 +61,8 @@ export interface DemoRequest {
   title: string;
   status: RequestStatus;
   createdAt: string;
-  startDate: string | null;
-  endDate: string | null;
+  startDate: null | string;
+  endDate: null | string;
   days: number;
   reason: string;
   reviewerComment: string;
@@ -80,7 +80,7 @@ export interface LeaveType {
   id: string;
   name: string;
   paid: boolean;
-  annualDays: number | null;
+  annualDays: null | number;
   annualReset: boolean;
 }
 
@@ -96,7 +96,7 @@ export interface DateHighlight {
   date: string;
   label: string;
   detail: string;
-  kind: 'Cumpleaños' | 'Aniversario' | 'Feriado';
+  kind: 'Aniversario' | 'Cumpleaños' | 'Feriado';
 }
 
 export interface ProcessTask {
@@ -115,9 +115,9 @@ export interface OnboardingProcess {
   startedAt: string;
   expectedEndDate: string;
   responsibleId: string;
-  status: 'En curso' | 'Completado';
+  status: 'Completado' | 'En curso';
   tasks: ProcessTask[];
-  completedAt: string | null;
+  completedAt: null | string;
 }
 
 export interface OffboardingProcess {
@@ -127,9 +127,37 @@ export interface OffboardingProcess {
   startedAt: string;
   exitDate: string;
   responsibleId: string;
-  status: 'En curso' | 'Completado';
+  status: 'Completado' | 'En curso';
   tasks: ProcessTask[];
-  completedAt: string | null;
+  completedAt: null | string;
+}
+
+export interface ExitInterview {
+  id: string;
+  employeeId: string;
+  date: string;
+  reason: string;
+  satisfaction: number;
+  recommend: 'No' | 'Sí';
+  comments: string;
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  name: string;
+  process: 'offboarding' | 'onboarding';
+  stages: string[];
+  durationDays: number;
+  summary: string;
+}
+
+export interface PeoplePolicy {
+  id: string;
+  name: string;
+  category: string;
+  scope: string;
+  summary: string;
+  reviewCycle: string;
 }
 
 export interface DemoTask {

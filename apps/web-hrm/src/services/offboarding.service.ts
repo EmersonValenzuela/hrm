@@ -1,15 +1,59 @@
-import dayjs from 'dayjs';
+import type { ExitInterview, OffboardingProcess, ProcessTask } from './domain';
 
-import type { OffboardingProcess, ProcessTask } from './domain';
+import dayjs from 'dayjs';
 
 import { readDemoState, updateDemoState } from './api';
 
 export type NewOffboardingProcess = Omit<
   OffboardingProcess,
-  'id' | 'startedAt' | 'status' | 'completedAt'
+  'completedAt' | 'id' | 'startedAt' | 'status'
 >;
 
 export const offboardingService = {
+  async listInterviews() {
+    const { exitInterviews } = await readDemoState();
+    return exitInterviews;
+  },
+
+  async createInterview(data: Omit<ExitInterview, 'date' | 'id'>) {
+    let interviewId = '';
+    const { exitInterviews } = await updateDemoState((state) => {
+      const employee = state.employees.find(
+        (item) => item.id === data.employeeId,
+      );
+      if (!employee) {
+        throw new Error('No encontramos a esa persona en el directorio.');
+      }
+      if (employee.status !== 'Inactivo') {
+        throw new Error(
+          'Registra la entrevista cuando el proceso de salida haya finalizado.',
+        );
+      }
+      if (!data.reason.trim() || !data.comments.trim()) {
+        throw new Error(
+          'Completa el motivo y los comentarios de la entrevista.',
+        );
+      }
+      if (data.satisfaction < 1 || data.satisfaction > 5) {
+        throw new Error('La satisfacción debe estar entre 1 y 5.');
+      }
+      interviewId = `exit-interview-${dayjs().format('YYYYMMDD-HHmmss-SSS')}`;
+      state.exitInterviews.push({
+        ...data,
+        id: interviewId,
+        date: dayjs().format('YYYY-MM-DD'),
+        reason: data.reason.trim(),
+        comments: data.comments.trim(),
+      });
+    });
+    const created = exitInterviews.find(
+      (interview) => interview.id === interviewId,
+    );
+    if (!created)
+      throw new Error('No pudimos guardar la entrevista de salida.');
+    return created;
+  },
+
   async list() {
     const { offboarding } = await readDemoState();
     return offboarding;
@@ -67,7 +111,7 @@ export const offboardingService = {
     processId: string,
     taskId: string,
     changes: Partial<
-      Pick<ProcessTask, 'dueDate' | 'responsible' | 'comment' | 'status'>
+      Pick<ProcessTask, 'comment' | 'dueDate' | 'responsible' | 'status'>
     >,
   ) {
     const { offboarding } = await updateDemoState((state) => {

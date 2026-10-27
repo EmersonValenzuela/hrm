@@ -9,7 +9,7 @@
 Los valores se definen en `apps/web-hrm/src/styles/tokens.css`. Los componentes deben consumirlos en lugar de introducir colores, radios, espaciados o sombras independientes.
 
 | Token | Valor | Uso |
-|---|---|---|
+| --- | --- | --- |
 | `--color-primary` | `#0F766E` | Acción principal, selección y navegación activa |
 | `--color-primary-soft` | `#CCFBF1` | Selección y fondos de apoyo |
 | `--color-accent` | `#F59E0B` | Atención y progreso |
@@ -29,15 +29,18 @@ El espaciado usa incrementos de 4 px (`--space-1` a `--space-8`), con una rejill
 
 Las variables `--el-*` en `tokens.css` adaptan Element Plus a esta paleta. Para colores semánticos se prefieren `StatusPill` y los estados nativos de Element Plus configurados por tokens.
 
+Al activar el modo oscuro nativo de Vben, la clase `dark` en `html` cambia los tokens de superficie, texto, líneas y controles. Los componentes deben seguir usando los mismos tokens semánticos; no deben añadir colores específicos para cada vista.
+
 ## Componentes base
 
 | Componente | Ruta | Responsabilidad |
-|---|---|---|
+| --- | --- | --- |
 | `PageHeading` | `src/components/shared/PageHeading.vue` | Título, descripción, contexto y acciones de una vista |
 | `FilterBar` | `src/components/shared/FilterBar.vue` | Distribución coherente y adaptable de filtros |
 | `StatePanel` | `src/components/shared/StatePanel.vue` | Estados de carga, vacío y error; incluye reintento accesible |
 | `KpiCard` | `src/components/data/KpiCard.vue` | Indicador breve con valor, apoyo y slot de icono |
 | `StatusPill` | `src/components/data/StatusPill.vue` | Estado textual y semántico que no depende solo del color |
+| `DataTable` | `src/components/data/DataTable.vue` | Tabla VXE con búsqueda, paginación, selección y densidad |
 | `ChartPanel` | `src/components/charts/ChartPanel.vue` | Marco con título, estados y gráfico ECharts adaptable |
 
 Los módulos deben priorizar estos patrones antes de agregar componentes específicos. Los formularios muestran validación en línea; las listas incluyen carga, vacío, error y éxito; las acciones confirmadas informan el resultado con mensajes breves en español peruano.
@@ -46,7 +49,7 @@ Los módulos deben priorizar estos patrones antes de agregar componentes especí
 
 La aplicación conserva el `BasicLayout` de Vben como infraestructura. El tabbar es el tabbar nativo: crea una pestaña por ruta visitada, permite regresar entre vistas y persiste la sesión de navegación. `Mi día` se fija con el metadato `affixTab`; las pestañas normales se cierran con las acciones del propio tabbar. Al cambiar de rol se cierran las pestañas no fijadas y se recarga la aplicación para reconstruir los permisos sin conservar accesos del rol anterior.
 
-Las pestañas dentro de una ficha (por ejemplo, Resumen, Personal y Trabajo) son pestañas de contenido del módulo y se implementarán con esa pantalla en la Fase 2; no se confunden con las pestañas de navegación.
+Las pestañas dentro de un módulo (por ejemplo, Panel, Procesos y Plantillas) son navegación de contenido del módulo; no se confunden con las pestañas de navegación del tabbar.
 
 ## Accesibilidad y movimiento
 

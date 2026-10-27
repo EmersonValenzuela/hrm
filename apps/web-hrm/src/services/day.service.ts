@@ -1,15 +1,26 @@
-import dayjs from 'dayjs';
-
 import type { DemoRole, DemoTask } from './domain';
 
-import { readDemoState, updateDemoState } from './api';
+import dayjs from 'dayjs';
+
+import { getDemoEmployee, readDemoState, updateDemoState } from './api';
 import { attendanceService } from './attendance.service';
 
 export interface DaySummary {
   role: DemoRole;
   activeEmployees: number;
+  pendingRequests: number;
+  pendingAttendance: number;
+  onboardingActive: number;
+  offboardingActive: number;
+  teamMembers: Array<{
+    id: string;
+    name: string;
+    title: string;
+    initials: string;
+    status: string;
+  }>;
   clockedIn: boolean;
-  lastClockTime: string | null;
+  lastClockTime: null | string;
   vacationDays: number;
   tasks: DemoTask[];
   events: Array<{ date: string; label: string; detail: string }>;
@@ -24,10 +35,7 @@ export interface DaySummary {
 export const dayService = {
   async getSummary(role: DemoRole): Promise<DaySummary> {
     const state = await readDemoState();
-    const currentEmployee = state.employees[0];
-    if (!currentEmployee) {
-      throw new Error('No hay personas disponibles para mostrar el resumen.');
-    }
+    const currentEmployee = getDemoEmployee(state, role);
     const leaveBalance = state.leaveBalances.find(
       (balance) => balance.employeeId === currentEmployee.id,
     );
@@ -37,6 +45,43 @@ export const dayService = {
       activeEmployees: state.employees.filter(
         (employee) => employee.status === 'Activo',
       ).length,
+      pendingRequests: state.requests.filter(
+        (request) => request.status === 'Solicitado',
+      ).length,
+      pendingAttendance: state.attendance.filter(
+        (record) =>
+          record.date === dayjs().format('YYYY-MM-DD') &&
+          record.status === 'Por validar',
+      ).length,
+      onboardingActive: state.onboarding.filter(
+        (process) => process.status === 'En curso',
+      ).length,
+      offboardingActive: state.offboarding.filter(
+        (process) => process.status === 'En curso',
+      ).length,
+      teamMembers: state.employees
+        .filter((employee) => employee.group === currentEmployee.group)
+        .slice(0, 5)
+        .map((employee) => {
+          const todayRecord = state.attendance.find(
+            (record) =>
+              record.employeeId === employee.id &&
+              record.date === dayjs().format('YYYY-MM-DD'),
+          );
+          let status = 'Sin marcar';
+          if (todayRecord?.checkIn) {
+            status = 'Presente';
+          } else if (employee.modality === 'Remoto') {
+            status = 'Remoto';
+          }
+          return {
+            id: employee.id,
+            name: employee.name,
+            title: employee.title,
+            initials: employee.initials,
+            status,
+          };
+        }),
       clockedIn: state.clockedIn,
       lastClockTime: state.lastClockTime,
       vacationDays: leaveBalance
@@ -44,10 +89,14 @@ export const dayService = {
           leaveBalance.usedDays -
           leaveBalance.pendingDays
         : 0,
-      tasks: state.tasks.filter((task) => task.role === role),
+      tasks: state.tasks.filter(
+        (task) =>
+          task.role === role &&
+          (!task.employeeId || task.employeeId === currentEmployee.id),
+      ),
       events: state.dateHighlights
         .filter((event) => !dayjs(event.date).isBefore(dayjs(), 'day'))
-        .sort((left, right) => left.date.localeCompare(right.date))
+        .toSorted((left, right) => left.date.localeCompare(right.date))
         .slice(0, 3)
         .map((event) => ({
           date: dayjs(event.date).format('D [de] MMMM'),
@@ -63,14 +112,9 @@ export const dayService = {
     };
   },
 
-  async toggleAttendance() {
+  async toggleAttendance(role: DemoRole) {
     const state = await readDemoState();
-    const currentEmployee = state.employees[0];
-    if (!currentEmployee) {
-      throw new Error(
-        'No hay una persona disponible para registrar la marcación.',
-      );
-    }
+    const currentEmployee = getDemoEmployee(state, role);
     return attendanceService.markNow(currentEmployee.id);
   },
 
@@ -81,6 +125,12 @@ export const dayService = {
         throw new Error('No encontramos esa tarea.');
       }
       task.done = !task.done;
+      const processTask = nextState.onboarding
+        .flatMap((process) => process.tasks)
+        .find((item) => item.id === taskId);
+      if (processTask) {
+        processTask.status = task.done ? 'Completada' : 'Pendiente';
+      }
     });
   },
 };

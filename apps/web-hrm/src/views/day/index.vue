@@ -1,10 +1,16 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import type { DemoRole } from '#/services/api';
+import type { DaySummary } from '#/services/day.service';
+import type { DemoTask } from '#/services/domain';
 
+import { computed, ref, watch } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+
+import { Page } from '@vben/common-ui';
 import { useUserStore } from '@vben/stores';
 
 import { ArrowRight, Check, Clock3, Sun } from '@lucide/vue';
+import dayjs from 'dayjs';
 import {
   ElButton,
   ElMessage,
@@ -12,15 +18,13 @@ import {
   ElSkeleton,
   ElTag,
 } from 'element-plus';
-import dayjs from 'dayjs';
 
-import type { DemoRole } from '#/services/api';
-import type { DaySummary } from '#/services/day.service';
-
+import KpiCard from '#/components/data/KpiCard.vue';
 import { dayService } from '#/services/day.service';
 
 const userStore = useUserStore();
 const route = useRoute();
+const router = useRouter();
 const summary = ref<DaySummary | null>(null);
 const loading = ref(true);
 const errorMessage = ref('');
@@ -62,7 +66,7 @@ async function loadSummary() {
 async function toggleAttendance() {
   actionLoading.value = true;
   try {
-    await dayService.toggleAttendance();
+    await dayService.toggleAttendance(role.value);
     await loadSummary();
     ElMessage.success(
       summary.value?.clockedIn
@@ -94,6 +98,20 @@ async function toggleTask(taskId: string) {
   }
 }
 
+async function openTask(task: DemoTask) {
+  if (task.id.startsWith('onb-')) {
+    await router.push('/onboarding/mi-ingreso');
+    return;
+  }
+  await toggleTask(task.id);
+}
+
+function taskActionLabel(task: DemoTask) {
+  return task.id.startsWith('onb-')
+    ? `Abrir formulario de ingreso: ${task.title}`
+    : `Completar tarea: ${task.title}`;
+}
+
 watch(
   () => [role.value, route.path],
   () => void loadSummary(),
@@ -102,7 +120,7 @@ watch(
 </script>
 
 <template>
-  <section class="day-page" aria-labelledby="day-heading">
+  <Page auto-content-height class="day-page" aria-labelledby="day-heading">
     <div v-if="loading" class="day-loading" aria-label="Cargando tu resumen">
       <ElSkeleton :rows="7" animated />
     </div>
@@ -129,9 +147,7 @@ watch(
         <section class="welcome-card" aria-label="Resumen de la jornada">
           <div class="welcome-card__copy">
             <div class="welcome-card__label">
-              <span class="welcome-card__icon"
-                ><Sun :size="18" aria-hidden="true"
-              /></span>
+              <span class="welcome-card__icon"><Sun :size="18" aria-hidden="true" /></span>
               <span>Tu jornada de hoy</span>
             </div>
             <h3>
@@ -174,9 +190,7 @@ watch(
             <span v-if="summary.lastClockTime" class="attendance-time">
               Última marcación · {{ summary.lastClockTime }}
             </span>
-            <span v-else class="attendance-time"
-              >Turno habitual · 09:00 a 18:00</span
-            >
+            <span v-else class="attendance-time">Turno habitual · 09:00 a 18:00</span>
           </div>
           <div v-else class="welcome-card__metric">
             <span>{{
@@ -216,8 +230,8 @@ watch(
               <ElButton
                 text
                 type="primary"
-                :aria-label="`Completar tarea: ${task.title}`"
-                @click="toggleTask(task.id)"
+                :aria-label="taskActionLabel(task)"
+                @click="openTask(task)"
               >
                 <Check :size="17" aria-hidden="true" />
               </ElButton>
@@ -236,6 +250,7 @@ watch(
         </section>
 
         <section
+          v-if="role === 'colaborador'"
           class="surface-card balance-card"
           aria-labelledby="balance-heading"
         >
@@ -265,6 +280,7 @@ watch(
         </section>
 
         <section
+          v-if="role === 'colaborador'"
           class="surface-card events-card"
           aria-labelledby="events-heading"
         >
@@ -288,6 +304,7 @@ watch(
         </section>
 
         <section
+          v-if="role === 'colaborador'"
           class="surface-card profile-card"
           aria-labelledby="profile-heading"
         >
@@ -302,28 +319,160 @@ watch(
           </div>
         </section>
       </div>
+      <section
+        v-if="role === 'jefe'"
+        class="surface-card team-dashboard"
+        aria-labelledby="team-dashboard-title"
+      >
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">Personas a tu cargo</p>
+            <h3 id="team-dashboard-title">Estado de tu equipo</h3>
+          </div>
+          <RouterLink to="/aprobaciones">Ir a aprobaciones</RouterLink>
+        </div>
+        <div class="team-list">
+          <article
+            v-for="person in summary.teamMembers"
+            :key="person.id"
+            class="team-row"
+          >
+            <span class="person-avatar" aria-hidden="true">{{
+              person.initials
+            }}</span>
+            <div>
+              <strong>{{ person.name }}</strong>
+              <p>{{ person.title }}</p>
+            </div>
+            <ElTag effect="plain">{{ person.status }}</ElTag>
+          </article>
+        </div>
+        <div class="team-shortcuts">
+          <RouterLink to="/aprobaciones">
+            {{ summary.pendingRequests }} solicitudes por atender
+          </RouterLink>
+          <RouterLink to="/vacaciones/calendario">
+            Consultar ausencias
+          </RouterLink>
+        </div>
+      </section>
+      <section
+        v-if="role === 'rrhh'"
+        class="people-dashboard"
+        aria-label="Resumen de gestión de personas"
+      >
+        <div class="people-kpis">
+          <KpiCard
+            label="Personas activas"
+            :value="summary.activeEmployees"
+            note="En el directorio"
+          />
+          <KpiCard
+            label="Asistencias por validar"
+            :value="summary.pendingAttendance"
+            note="Marcaciones de hoy"
+          />
+          <KpiCard
+            label="Solicitudes pendientes"
+            :value="summary.pendingRequests"
+            note="En toda la organización"
+          />
+          <KpiCard
+            label="Ingresos en curso"
+            :value="summary.onboardingActive"
+            note="Procesos de onboarding"
+          />
+          <KpiCard
+            label="Salidas acompañadas"
+            :value="summary.offboardingActive"
+            note="Procesos de offboarding"
+          />
+        </div>
+        <div class="people-shortcuts">
+          <RouterLink to="/empleados">Directorio de personas</RouterLink>
+          <RouterLink to="/asistencia">Revisar asistencia</RouterLink>
+          <RouterLink to="/onboarding/procesos">Acompañar ingresos</RouterLink>
+          <RouterLink to="/offboarding/procesos">Acompañar salidas</RouterLink>
+        </div>
+      </section>
     </template>
-  </section>
+  </Page>
 </template>
 
 <style scoped>
 .day-page {
   display: grid;
   gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.team-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-2);
+}
+
+.team-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius-control);
+}
+
+.team-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-row p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-ink-muted);
+}
+
+.team-shortcuts,
+.people-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.team-shortcuts a,
+.people-shortcuts a,
+.card-heading a {
+  font-weight: 650;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.people-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.people-shortcuts a {
+  padding: var(--space-3);
+  background: var(--color-card);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius-control);
 }
 
 .day-loading {
+  padding: var(--space-6);
+  background: var(--color-card);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-card);
-  background: var(--color-card);
-  padding: var(--space-6);
 }
 
 .page-intro {
   display: flex;
+  gap: var(--space-4);
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
 }
 
 .page-intro h2,
@@ -350,11 +499,11 @@ watch(
 
 .eyebrow {
   margin: 0;
-  color: var(--color-primary);
   font-size: var(--font-size-12);
   font-weight: 650;
-  letter-spacing: 0.045em;
+  color: var(--color-primary);
   text-transform: uppercase;
+  letter-spacing: 0.045em;
 }
 
 .day-grid {
@@ -365,12 +514,12 @@ watch(
 
 .welcome-card {
   display: flex;
-  min-height: 15rem;
   grid-column: span 4;
+  gap: var(--space-5);
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-5);
-  border-radius: var(--radius-card);
+  min-height: 15rem;
+  padding: var(--space-6);
   background:
     radial-gradient(
       ellipse at 92% 10%,
@@ -378,7 +527,7 @@ watch(
       transparent 50%
     ),
     var(--color-card);
-  padding: var(--space-6);
+  border-radius: var(--radius-card);
 }
 
 .welcome-card__copy {
@@ -387,19 +536,19 @@ watch(
 
 .welcome-card__label {
   display: flex;
-  align-items: center;
   gap: var(--space-2);
-  color: var(--color-primary);
+  align-items: center;
   font-weight: 650;
+  color: var(--color-primary);
 }
 
 .welcome-card__icon {
   display: grid;
+  place-items: center;
   width: var(--space-6);
   height: var(--space-6);
-  place-items: center;
-  border-radius: var(--radius-control);
   background: var(--color-primary-soft);
+  border-radius: var(--radius-control);
 }
 
 .welcome-card h3 {
@@ -412,52 +561,52 @@ watch(
 
 .welcome-card p {
   margin: 0;
-  color: var(--color-ink-muted);
   line-height: 1.6;
+  color: var(--color-ink-muted);
 }
 
 .attendance-control {
   display: grid;
-  justify-items: start;
   gap: var(--space-3);
+  justify-items: start;
 }
 
 .attendance-button {
-  min-height: var(--space-8);
   gap: var(--space-2);
+  min-height: var(--space-8);
   padding-inline: var(--space-5);
 }
 
 .attendance-time {
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
 }
 
 .welcome-card__metric {
   display: grid;
-  min-width: 9rem;
   gap: var(--space-1);
-  color: var(--color-ink-muted);
+  min-width: 9rem;
   font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
 }
 
 .welcome-card__metric strong {
-  color: var(--color-primary);
   font-family: var(--font-display);
   font-size: var(--font-size-32);
+  color: var(--color-primary);
 }
 
 .surface-card {
   min-width: 0;
+  padding: var(--space-5);
+  background: var(--color-card);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-card);
-  background: var(--color-card);
-  padding: var(--space-5);
 }
 
 .tasks-card {
-  grid-column: span 4;
   grid-row: span 2;
+  grid-column: span 4;
 }
 
 .balance-card,
@@ -468,15 +617,15 @@ watch(
 .profile-card {
   display: flex;
   grid-column: span 2;
-  align-items: center;
   gap: var(--space-3);
+  align-items: center;
 }
 
 .card-heading {
   display: flex;
+  gap: var(--space-3);
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
 }
 
 .card-heading h3 {
@@ -486,13 +635,13 @@ watch(
 
 .count-badge {
   display: grid;
+  place-items: center;
   min-width: var(--space-6);
   height: var(--space-6);
-  place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
   font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-pill);
 }
 
 .task-list {
@@ -502,23 +651,23 @@ watch(
 
 .task-row {
   display: flex;
-  align-items: center;
   gap: var(--space-3);
-  border-top: var(--border-width) solid var(--color-line);
+  align-items: center;
   padding-block: var(--space-3);
+  border-top: var(--border-width) solid var(--color-line);
 }
 
 .task-row__marker {
+  flex: 0 0 auto;
   width: var(--space-2);
   height: var(--space-2);
-  flex: 0 0 auto;
-  border-radius: var(--radius-pill);
   background: var(--color-accent);
+  border-radius: var(--radius-pill);
 }
 
 .task-row__copy {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
 }
 
 .task-row h4,
@@ -537,30 +686,30 @@ watch(
 .task-row p,
 .event-row p {
   margin-top: var(--space-1);
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
   line-height: 1.5;
+  color: var(--color-ink-muted);
 }
 
 .empty-note {
   display: flex;
-  align-items: center;
   gap: var(--space-2);
+  align-items: center;
   margin-top: var(--space-4);
   color: var(--color-success);
 }
 
 .completed-note {
-  border-top: var(--border-width) solid var(--color-line);
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-12);
   padding-top: var(--space-3);
+  font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
+  border-top: var(--border-width) solid var(--color-line);
 }
 
 .balance-card__body {
   display: flex;
-  align-items: center;
   gap: var(--space-4);
+  align-items: center;
   margin-top: var(--space-4);
 }
 
@@ -576,8 +725,8 @@ watch(
 
 .balance-card__body span,
 .card-footnote {
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
 }
 
 .card-footnote {
@@ -590,33 +739,33 @@ watch(
 
 .event-row {
   display: flex;
-  align-items: start;
   gap: var(--space-3);
-  border-top: var(--border-width) solid var(--color-line);
-  margin-top: var(--space-3);
+  align-items: start;
   padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: var(--border-width) solid var(--color-line);
 }
 
 .event-date {
   min-width: 4.5rem;
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  color: var(--color-ink-muted);
-  font-size: var(--font-size-12);
   padding: var(--space-2);
+  font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
   text-align: center;
+  background: var(--color-surface);
+  border-radius: var(--radius-control);
 }
 
 .profile-avatar {
   display: grid;
-  width: var(--space-8);
-  height: var(--space-8);
   flex: 0 0 auto;
   place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  width: var(--space-8);
+  height: var(--space-8);
   font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-pill);
 }
 
 .profile-card__body h3 {
@@ -628,8 +777,8 @@ watch(
 .profile-card__body span {
   display: block;
   margin: 0;
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
 }
 
 .profile-card__body span {
@@ -638,12 +787,12 @@ watch(
 
 .state-panel {
   display: grid;
-  justify-items: start;
   gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-6);
+  background: var(--color-card);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-card);
-  background: var(--color-card);
-  padding: var(--space-6);
 }
 
 .state-panel h2,

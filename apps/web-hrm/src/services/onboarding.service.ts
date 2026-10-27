@@ -1,12 +1,12 @@
-import dayjs from 'dayjs';
-
 import type { OnboardingProcess, ProcessTask } from './domain';
+
+import dayjs from 'dayjs';
 
 import { readDemoState, updateDemoState } from './api';
 
 export type NewOnboardingProcess = Omit<
   OnboardingProcess,
-  'id' | 'startedAt' | 'status' | 'completedAt'
+  'completedAt' | 'id' | 'startedAt' | 'status'
 >;
 
 export const onboardingService = {
@@ -28,6 +28,11 @@ export const onboardingService = {
       );
       if (!employee) {
         throw new Error('No encontramos a esa persona en el directorio.');
+      }
+      if (employee.status !== 'En onboarding') {
+        throw new Error(
+          'Solo puedes iniciar el proceso de una persona en etapa de ingreso.',
+        );
       }
       if (
         state.onboarding.some(
@@ -76,7 +81,7 @@ export const onboardingService = {
     processId: string,
     taskId: string,
     changes: Partial<
-      Pick<ProcessTask, 'dueDate' | 'responsible' | 'comment' | 'status'>
+      Pick<ProcessTask, 'comment' | 'dueDate' | 'responsible' | 'status'>
     >,
   ) {
     const { onboarding } = await updateDemoState((state) => {

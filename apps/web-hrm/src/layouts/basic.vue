@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { DemoRole } from '#/services/api';
+
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -8,17 +10,19 @@ import { useTabbarStore, useUserStore } from '@vben/stores';
 
 import { ElMessage, ElOption, ElSelect } from 'element-plus';
 
-import type { DemoRole } from '#/services/api';
-
 import { APP_NAME } from '#/config';
-import { getDemoRole, resetDemo, saveDemoRole } from '#/services/api';
+import {
+  getDemoHomePath,
+  getDemoRole,
+  resetDemo,
+  saveDemoRole,
+} from '#/services/api';
 
 const appRouter = useRouter();
 const tabbarStore = useTabbarStore();
 const userStore = useUserStore();
 const activeRole = ref<DemoRole>(getDemoRole());
 const resetNoticeKey = 'ayni-demo-reset-notice-v1';
-
 const roleOptions: Array<{ label: string; value: DemoRole }> = [
   { label: 'Colaborador', value: 'colaborador' },
   { label: 'Jefe', value: 'jefe' },
@@ -48,7 +52,7 @@ async function applyRole(role: DemoRole, showResetNotice = false) {
   if (!currentUser) {
     throw new Error('No encontramos la cuenta local de la demostración.');
   }
-  const homePath = currentUser.homePath || '/mi-dia';
+  const homePath = getDemoHomePath(role);
 
   activeRole.value = role;
   saveDemoRole(role);
@@ -73,7 +77,7 @@ async function onResetDemo() {
 <template>
   <BasicLayout
     :avatar
-    :logo-src="'/favicon.svg'"
+    logo-src="/favicon.svg"
     :logo-text="APP_NAME"
     :text="userStore.userInfo?.realName"
   >
@@ -108,11 +112,11 @@ async function onResetDemo() {
 <style scoped>
 .role-switch {
   display: flex;
-  align-items: center;
   gap: var(--space-2);
+  align-items: center;
   padding-inline: var(--space-2);
-  color: var(--color-ink-muted);
   font-size: var(--font-size-12);
+  color: var(--color-ink-muted);
   white-space: nowrap;
 }
 

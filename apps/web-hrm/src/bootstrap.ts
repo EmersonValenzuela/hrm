@@ -1,39 +1,53 @@
 import { createApp, watchEffect } from 'vue';
 
 import { registerAccessDirective } from '@vben/access';
+import { registerLoadingDirective } from '@vben/common-ui';
 import { setSupportLanguages } from '@vben/constants';
 import { preferences } from '@vben/preferences';
 import { initStores, useAccessStore, useUserStore } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/ele';
-import '#/styles/tokens.css';
 
 import { APP_NAME } from '#/config';
-import { getDemoRole } from '#/services/api';
 import { setupI18n } from '#/locales';
+import {
+  getDemoEmployee,
+  getDemoHomePath,
+  getDemoRole,
+  readDemoState,
+} from '#/services/api';
 
+import { initComponentAdapter } from './adapter/component';
+import { initSetupVbenForm } from './adapter/form';
 import App from './app.vue';
 import { router } from './router';
 
+import '#/styles/tokens.css';
+
 async function bootstrap(namespace: string) {
+  await initComponentAdapter();
+  await initSetupVbenForm();
+  await import('./adapter/vxe-table');
   setSupportLanguages([{ label: 'Español (Perú)', value: 'es-PE' }]);
   const app = createApp(App);
+  registerLoadingDirective(app, { loading: false, spinning: 'spinning' });
 
   await setupI18n(app);
   await initStores(app, { namespace });
 
   const role = getDemoRole();
+  const demoEmployee = getDemoEmployee(await readDemoState(), role);
   const demoToken = 'ayni-frontend-demo';
   useAccessStore().setAccessToken(demoToken);
   useUserStore().setUserInfo({
     avatar: '',
     desc: 'Cuenta local para recorrer la demostración.',
-    homePath: '/mi-dia',
-    realName: 'Valeria Rojas',
+    homePath: getDemoHomePath(role),
+    realName: demoEmployee.name,
     roles: [role],
     token: demoToken,
-    userId: 'emp-0001',
-    username: 'valeria.rojas',
+    userId: demoEmployee.id,
+    username: demoEmployee.email.split('@')[0] ?? demoEmployee.email,
   });
 
   registerAccessDirective(app);

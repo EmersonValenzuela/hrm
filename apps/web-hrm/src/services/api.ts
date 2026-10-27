@@ -1,5 +1,20 @@
+import type {
+  AttendanceRecord,
+  DateHighlight,
+  DemoRequest,
+  DemoRole,
+  DemoTask,
+  Employee,
+  ExitInterview,
+  LeaveBalance,
+  LeaveType,
+  OffboardingProcess,
+  OnboardingProcess,
+  PeruHoliday,
+} from './domain';
+
 import { attendanceMock } from '#/mocks/attendance';
-import { employeeMock } from '#/mocks/employees';
+import { employeeGroups, employeeMock } from '#/mocks/employees';
 import { dateHighlightsMock } from '#/mocks/events';
 import {
   leaveBalancesMock,
@@ -9,24 +24,11 @@ import {
 import { offboardingMock, onboardingMock } from '#/mocks/processes';
 import { requestsMock } from '#/mocks/requests';
 
-import type {
-  AttendanceRecord,
-  DateHighlight,
-  DemoRequest,
-  DemoRole,
-  DemoTask,
-  Employee,
-  LeaveBalance,
-  LeaveType,
-  OffboardingProcess,
-  OnboardingProcess,
-  PeruHoliday,
-} from './domain';
-
 export type { DemoRole } from './domain';
 
 export interface DemoState {
   employees: Employee[];
+  groups: string[];
   attendance: AttendanceRecord[];
   requests: DemoRequest[];
   leaveBalances: LeaveBalance[];
@@ -35,17 +37,24 @@ export interface DemoState {
   dateHighlights: DateHighlight[];
   onboarding: OnboardingProcess[];
   offboarding: OffboardingProcess[];
+  exitInterviews: ExitInterview[];
   clockedIn: boolean;
-  lastClockTime: string | null;
+  lastClockTime: null | string;
   vacationDays: number;
   tasks: DemoTask[];
 }
 
-const demoStorageKey = 'ayni-demo-state-v2';
+const demoStorageKey = 'ayni-demo-state-v4';
 const roleStorageKey = 'ayni-demo-role-v1';
+const homePaths: Record<DemoRole, string> = {
+  colaborador: '/mi-dia',
+  jefe: '/mi-equipo',
+  rrhh: '/inicio-rrhh',
+};
 
 const initialState: DemoState = {
   employees: employeeMock,
+  groups: employeeGroups,
   attendance: attendanceMock,
   requests: requestsMock,
   leaveBalances: leaveBalancesMock,
@@ -54,12 +63,13 @@ const initialState: DemoState = {
   dateHighlights: dateHighlightsMock,
   onboarding: onboardingMock,
   offboarding: offboardingMock,
+  exitInterviews: [],
   clockedIn: false,
   lastClockTime: null,
   vacationDays: 18,
   tasks: [
     {
-      id: 'welcome-form',
+      id: 'onb-0001-task-1',
       title: 'Completa tus datos de ingreso',
       detail: 'Tu información ayuda a preparar tu primer día.',
       role: 'colaborador',
@@ -94,6 +104,7 @@ function isDemoState(value: unknown): value is DemoState {
   const record = value as Record<string, unknown>;
   return (
     Array.isArray(record.employees) &&
+    Array.isArray(record.groups) &&
     Array.isArray(record.attendance) &&
     Array.isArray(record.requests) &&
     Array.isArray(record.leaveBalances) &&
@@ -102,12 +113,29 @@ function isDemoState(value: unknown): value is DemoState {
     Array.isArray(record.dateHighlights) &&
     Array.isArray(record.onboarding) &&
     Array.isArray(record.offboarding) &&
+    Array.isArray(record.exitInterviews) &&
     typeof record.clockedIn === 'boolean' &&
     (record.lastClockTime === null ||
       typeof record.lastClockTime === 'string') &&
     typeof record.vacationDays === 'number' &&
     Array.isArray(record.tasks)
   );
+}
+
+export function getDemoEmployee(state: DemoState, role: DemoRole) {
+  let employeeId: string | undefined;
+  if (role === 'colaborador') {
+    employeeId = state.tasks
+      .toReversed()
+      .find((task) => task.role === role && task.employeeId)?.employeeId;
+  }
+  const employee =
+    state.employees.find((item) => item.id === employeeId) ??
+    state.employees[0];
+  if (!employee) {
+    throw new Error('No hay personas disponibles para mostrar el resumen.');
+  }
+  return employee;
 }
 
 function getState(): DemoState {
@@ -189,6 +217,10 @@ export function getDemoRole(): DemoRole {
   return savedRole === 'jefe' || savedRole === 'rrhh'
     ? savedRole
     : 'colaborador';
+}
+
+export function getDemoHomePath(role: DemoRole) {
+  return homePaths[role];
 }
 
 export function saveDemoRole(role: DemoRole) {

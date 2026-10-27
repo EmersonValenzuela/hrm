@@ -1,6 +1,6 @@
-import dayjs from 'dayjs';
-
 import type { DemoRequest, RequestStatus, RequestType } from './domain';
+
+import dayjs from 'dayjs';
 
 import { readDemoState, updateDemoState } from './api';
 
@@ -12,12 +12,12 @@ export interface RequestFilters {
 
 type NewRequest = Pick<
   DemoRequest,
-  'employeeId' | 'type' | 'title' | 'startDate' | 'endDate' | 'days' | 'reason'
+  'days' | 'employeeId' | 'endDate' | 'reason' | 'startDate' | 'title' | 'type'
 >;
 
 type EditableRequest = Pick<
   DemoRequest,
-  'title' | 'startDate' | 'endDate' | 'days' | 'reason'
+  'days' | 'endDate' | 'reason' | 'startDate' | 'title'
 >;
 
 function balanceForEmployee(
@@ -42,6 +42,27 @@ function releasePendingVacation(
     const balance = balanceForEmployee(state.leaveBalances, request.employeeId);
     balance.pendingDays -= request.days;
   }
+}
+
+function countLeaveDays(
+  state: Awaited<ReturnType<typeof readDemoState>>,
+  startDate: string,
+  endDate: string,
+) {
+  let count = 0;
+  let cursor = dayjs(startDate);
+  while (!cursor.isAfter(dayjs(endDate), 'day')) {
+    const date = cursor.format('YYYY-MM-DD');
+    if (
+      cursor.day() !== 0 &&
+      cursor.day() !== 6 &&
+      !state.holidays.some((holiday) => holiday.date === date)
+    ) {
+      count += 1;
+    }
+    cursor = cursor.add(1, 'day');
+  }
+  return count;
 }
 
 export const requestsService = {
@@ -80,6 +101,14 @@ export const requestsService = {
         if (dayjs(data.endDate).isBefore(dayjs(data.startDate), 'day')) {
           throw new Error(
             'La fecha de fin debe ser igual o posterior a la de inicio.',
+          );
+        }
+        if (dayjs(data.startDate).isBefore(dayjs(), 'day')) {
+          throw new Error('La fecha de inicio no puede estar en el pasado.');
+        }
+        if (countLeaveDays(state, data.startDate, data.endDate) !== data.days) {
+          throw new Error(
+            'La cantidad de días no coincide con los días hábiles del periodo.',
           );
         }
         const balance = balanceForEmployee(
@@ -130,6 +159,17 @@ export const requestsService = {
         if (dayjs(changes.endDate).isBefore(dayjs(changes.startDate), 'day')) {
           throw new Error(
             'La fecha de fin debe ser igual o posterior a la de inicio.',
+          );
+        }
+        if (dayjs(changes.startDate).isBefore(dayjs(), 'day')) {
+          throw new Error('La fecha de inicio no puede estar en el pasado.');
+        }
+        if (
+          countLeaveDays(state, changes.startDate, changes.endDate) !==
+          changes.days
+        ) {
+          throw new Error(
+            'La cantidad de días no coincide con los días hábiles del periodo.',
           );
         }
         const balance = balanceForEmployee(
