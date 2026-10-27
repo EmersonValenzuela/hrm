@@ -1,0 +1,19 @@
+{
+  "widgets": {
+    "clearNotifications": "Limpiar notificaciones",
+    "markAllAsRead": "Marcar todo como leído",
+    "notifications": "Notificaciones",
+    "viewAll": "Ver todas",
+    "logoutTip": "¿Deseas cerrar sesión?",
+    "search": {
+      "close": "Cerrar",
+      "navigate": "Navegar",
+      "noRecent": "No hay búsquedas recientes",
+      "noResults": "No se encontraron resultados",
+      "recent": "Búsquedas recientes",
+      "searchNavigate": "Buscar en el menú",
+      "select": "Seleccionar",
+      "title": "Buscar"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "title": "Preferencias",
+  "tabbar": {
+    "contextMenu": {
+      "close": "Cerrar pestaña",
+      "closeAll": "Cerrar todas",
+      "closeLeft": "Cerrar pestañas a la izquierda",
+      "closeOther": "Cerrar las demás",
+      "closeRight": "Cerrar pestañas a la derecha",
+      "maximize": "Maximizar",
+      "openInNewWindow": "Abrir en una ventana nueva",
+      "pin": "Fijar pestaña",
+      "reload": "Actualizar pestaña",
+      "restoreMaximize": "Restaurar",
+      "unpin": "Dejar de fijar"
+    }
+  },
+  "theme": {
+    "title": "Tema"
+  },
+  "widget": {
+    "fullscreen": "Pantalla completa",
+    "languageToggle": "Cambiar idioma",
+    "notification": "Notificaciones",
+    "refresh": "Actualizar"
+  }
+}

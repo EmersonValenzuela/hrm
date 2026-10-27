@@ -1,0 +1,13 @@
+{
+  "app": {
+    "name": "Ayni",
+    "day": "Mi día",
+    "employees": "Empleados",
+    "team": "Mi equipo",
+    "role": {
+      "employee": "Colaborador",
+      "manager": "Jefe",
+      "hr": "RR. HH."
+    }
+  }
+}
