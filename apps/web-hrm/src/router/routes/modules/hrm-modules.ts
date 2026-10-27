@@ -1,157 +1,183 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 const moduleView = () => import('#/views/modules/index.vue');
-const allRoles = ['colaborador', 'jefe', 'rrhh'];
 const peopleRoles = ['jefe', 'rrhh'];
 const hrRoles = ['rrhh'];
-type HiddenRoute = [name: string, path: string, title: string];
-
-function hiddenRoutes(
-  definitions: HiddenRoute[],
-  authority: string[],
-): RouteRecordRaw[] {
-  return definitions.map(([name, path, title]) => ({
-    name,
-    path,
-    component: moduleView,
-    meta: { authority, hideInMenu: true, title },
-  }));
-}
 
 const routes: RouteRecordRaw[] = [
   {
-    name: 'MyRequests',
-    path: '/mis-solicitudes',
-    component: moduleView,
-    meta: {
-      authority: allRoles,
-      icon: 'lucide:inbox',
-      keepAlive: true,
-      title: 'Mis solicitudes',
-    },
-  },
-  {
-    name: 'Approvals',
-    path: '/aprobaciones',
-    component: moduleView,
+    name: 'Administration',
+    path: '/administracion',
+    redirect: '/inicio-rrhh',
     meta: {
       authority: peopleRoles,
-      icon: 'lucide:clipboard-check',
-      keepAlive: true,
-      title: 'Aprobaciones',
+      icon: 'lucide:briefcase-business',
+      title: 'Administración',
     },
+    children: [
+      {
+        name: 'PeopleHome',
+        path: '/inicio-rrhh',
+        component: () => import('#/views/admin/index.vue'),
+        meta: {
+          affixTab: true,
+          authority: hrRoles,
+          icon: 'lucide:layout-dashboard',
+          keepAlive: true,
+          title: 'Panel de gestión',
+        },
+      },
+      {
+        name: 'Attendance',
+        path: '/asistencia',
+        meta: {
+          authority: peopleRoles,
+          icon: 'lucide:timer',
+          title: 'Asistencia',
+        },
+        children: [
+          {
+            name: 'AttendanceHome',
+            path: '',
+            component: moduleView,
+            meta: {
+              authority: peopleRoles,
+              keepAlive: true,
+              title: 'Resumen diario',
+            },
+          },
+          {
+            name: 'AttendanceRecords',
+            path: 'registros',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Registros' },
+          },
+          {
+            name: 'AttendanceCorrections',
+            path: 'correcciones',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Correcciones' },
+          },
+          {
+            name: 'AttendanceMonthly',
+            path: 'mensual',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Resumen mensual' },
+          },
+          {
+            name: 'AttendanceDailyStatus',
+            path: 'estado-diario',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Estado diario' },
+          },
+        ],
+      },
+      {
+        name: 'Onboarding',
+        path: '/onboarding',
+        meta: {
+          authority: peopleRoles,
+          icon: 'lucide:user-round-plus',
+          title: 'Onboarding',
+        },
+        children: [
+          {
+            name: 'OnboardingHome',
+            path: '',
+            component: moduleView,
+            meta: {
+              authority: peopleRoles,
+              keepAlive: true,
+              title: 'Resumen de ingresos',
+            },
+          },
+          {
+            name: 'OnboardingProcesses',
+            path: 'procesos',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Procesos de ingreso' },
+          },
+          {
+            name: 'OnboardingNew',
+            path: 'nuevo',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Iniciar onboarding' },
+          },
+          {
+            name: 'OnboardingTemplates',
+            path: 'plantillas',
+            component: moduleView,
+            meta: { authority: peopleRoles, title: 'Plantillas de ingreso' },
+          },
+        ],
+      },
+      {
+        name: 'Offboarding',
+        path: '/offboarding',
+        meta: {
+          authority: hrRoles,
+          icon: 'lucide:user-round-minus',
+          title: 'Offboarding',
+        },
+        children: [
+          {
+            name: 'OffboardingHome',
+            path: '',
+            component: moduleView,
+            meta: {
+              authority: hrRoles,
+              keepAlive: true,
+              title: 'Resumen de salidas',
+            },
+          },
+          {
+            name: 'OffboardingProcesses',
+            path: 'procesos',
+            component: moduleView,
+            meta: { authority: hrRoles, title: 'Procesos de salida' },
+          },
+          {
+            name: 'OffboardingNew',
+            path: 'nuevo',
+            component: moduleView,
+            meta: { authority: hrRoles, title: 'Iniciar offboarding' },
+          },
+          {
+            name: 'OffboardingInterviews',
+            path: 'entrevistas',
+            component: moduleView,
+            meta: { authority: hrRoles, title: 'Entrevistas de salida' },
+          },
+          {
+            name: 'OffboardingTemplates',
+            path: 'plantillas',
+            component: moduleView,
+            meta: { authority: hrRoles, title: 'Plantillas de salida' },
+          },
+        ],
+      },
+      {
+        name: 'AdministrationSettings',
+        path: '/configuracion',
+        component: moduleView,
+        meta: {
+          authority: hrRoles,
+          icon: 'lucide:settings-2',
+          title: 'Configuración',
+        },
+      },
+    ],
   },
   {
-    name: 'Attendance',
-    path: '/asistencia',
-    component: moduleView,
-    meta: {
-      authority: peopleRoles,
-      icon: 'lucide:timer',
-      keepAlive: true,
-      title: 'Asistencia',
-    },
-  },
-  ...hiddenRoutes(
-    [
-      ['AttendanceRecords', '/asistencia/registros', 'Registros de asistencia'],
-      ['AttendanceCorrections', '/asistencia/correcciones', 'Correcciones'],
-      ['AttendanceMonthly', '/asistencia/mensual', 'Resumen mensual'],
-      ['AttendanceDailyStatus', '/asistencia/estado-diario', 'Estado diario'],
-    ],
-    peopleRoles,
-  ),
-  {
-    name: 'Leave',
-    path: '/vacaciones',
-    component: moduleView,
-    meta: {
-      authority: allRoles,
-      icon: 'lucide:calendar-days',
-      keepAlive: true,
-      title: 'Vacaciones y permisos',
-    },
-  },
-  ...hiddenRoutes(
-    [
-      ['LeaveRequest', '/vacaciones/solicitar', 'Solicitar descanso'],
-      ['LeaveCalendar', '/vacaciones/calendario', 'Calendario de ausencias'],
-    ],
-    allRoles,
-  ),
-  ...hiddenRoutes(
-    [
-      ['LeaveBalances', '/vacaciones/saldos', 'Saldos'],
-      ['LeaveTypes', '/vacaciones/tipos', 'Tipos de permiso'],
-      ['LeaveHolidays', '/vacaciones/feriados', 'Feriados'],
-    ],
-    hrRoles,
-  ),
-  {
-    name: 'Onboarding',
-    path: '/onboarding',
-    component: moduleView,
-    meta: {
-      authority: peopleRoles,
-      icon: 'lucide:user-round-plus',
-      keepAlive: true,
-      title: 'Onboarding',
-    },
-  },
-  ...hiddenRoutes(
-    [
-      ['OnboardingProcesses', '/onboarding/procesos', 'Procesos de ingreso'],
-      ['OnboardingNew', '/onboarding/nuevo', 'Iniciar onboarding'],
-      [
-        'OnboardingTemplates',
-        '/onboarding/plantillas',
-        'Plantillas de ingreso',
-      ],
-    ],
-    peopleRoles,
-  ),
-  ...hiddenRoutes(
-    [['OnboardingPortal', '/onboarding/mi-ingreso', 'Mi ingreso']],
-    allRoles,
-  ),
-  {
-    name: 'Offboarding',
-    path: '/offboarding',
+    name: 'LeaveManagement',
+    path: '/vacaciones/administracion',
     component: moduleView,
     meta: {
       authority: hrRoles,
-      icon: 'lucide:user-round-minus',
-      keepAlive: true,
-      title: 'Offboarding',
+      hideInMenu: true,
+      title: 'Administrar descansos',
     },
   },
-  ...hiddenRoutes(
-    [
-      ['OffboardingProcesses', '/offboarding/procesos', 'Procesos de salida'],
-      ['OffboardingNew', '/offboarding/nuevo', 'Iniciar offboarding'],
-      [
-        'OffboardingInterviews',
-        '/offboarding/entrevistas',
-        'Entrevistas de salida',
-      ],
-      [
-        'OffboardingTemplates',
-        '/offboarding/plantillas',
-        'Plantillas de salida',
-      ],
-    ],
-    hrRoles,
-  ),
-  ...hiddenRoutes(
-    [
-      ['EmployeeNew', '/empleados/nuevo', 'Alta de persona'],
-      ['EmployeeGroups', '/empleados/grupos', 'Equipos y áreas'],
-      ['EmployeeOrgChart', '/empleados/organigrama', 'Organigrama'],
-      ['EmployeeShifts', '/empleados/horarios', 'Horarios'],
-      ['EmployeePolicies', '/empleados/politicas', 'Políticas internas'],
-    ],
-    hrRoles,
-  ),
 ];
 
 export default routes;

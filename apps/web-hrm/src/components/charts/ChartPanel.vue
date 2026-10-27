@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ECOption, EchartsUIType } from '@vben/plugins/echarts';
+import type { EchartsUIType, ECOption } from '@vben/plugins/echarts';
 
 import { onMounted, ref, watch } from 'vue';
 
@@ -7,7 +7,7 @@ import { EchartsUI, useEcharts } from '@vben/plugins/echarts';
 
 const props = withDefaults(
   defineProps<{
-    ariaLabel: string;
+    accessibleLabel: string;
     height?: string;
     option: ECOption;
     title: string;
@@ -52,7 +52,7 @@ watch(() => props.option, render, { deep: true });
     <EchartsUI
       ref="chartRef"
       class="chart-panel__chart"
-      :aria-label="ariaLabel"
+      :aria-label="accessibleLabel"
       role="img"
       :height="height"
     />
@@ -62,18 +62,18 @@ watch(() => props.option, render, { deep: true });
 <style scoped>
 .chart-panel {
   min-width: 0;
+  padding: var(--space-4);
+  background: var(--color-card);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-card);
-  background: var(--color-card);
-  padding: var(--space-4);
 }
 
 .chart-panel__title {
   margin: 0;
-  color: var(--color-ink);
   font-family: var(--font-display);
   font-size: var(--font-size-16);
   font-weight: 600;
+  color: var(--color-ink);
 }
 
 .chart-panel__chart {
